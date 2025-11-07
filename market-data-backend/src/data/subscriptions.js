@@ -20,3 +20,16 @@ export function addSubscription(userId, instrumentName) {
 export function getUserSubscriptions(userId) {
   return Array.from(userSubscriptions.get(userId) || []);
 }
+
+
+export function removeSubscription(userId, instrument) {
+  if (!userSubscriptions.has(userId)) {
+    return false;
+  }
+  const subs = userSubscriptions.get(userId);
+  const existed = subs.delete(instrument);
+  if (subs.size === 0) {
+    userSubscriptions.delete(userId); // clean up empty users
+  }
+  return existed;
+}

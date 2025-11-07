@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { subscribeInstrument } from "../api/instruments";
 import { useMarketData } from "../hooks/useMarketData";
 import { useAuth } from "../context/AuthContext";
+
 import "./../index.css";
 
 
@@ -28,6 +29,8 @@ export default function DashboardPage() {
       setError(err.response?.data?.error || "Subscription failed");
     }
   };
+
+ 
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
