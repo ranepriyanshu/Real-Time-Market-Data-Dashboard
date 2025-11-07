@@ -1,35 +1,20 @@
-/**
- * Temporary in-memory storage for user subscriptions.
- * Structure: Map<userId, Set<instrumentName>>
- */
-export const userSubscriptions = new Map();
-
-/**
- * Subscribe a user to an instrument.
- */
-export function addSubscription(userId, instrumentName) {
-  if (!userSubscriptions.has(userId)) {
-    userSubscriptions.set(userId, new Set());
-  }
-  userSubscriptions.get(userId).add(instrumentName);
+export async function addSubscription(redis, userId, instrument) {
+  await redis.sAdd(`user:${userId}:subscriptions`, instrument);
 }
 
-/**
- * Get all subscriptions for a user.
- */
-export function getUserSubscriptions(userId) {
-  return Array.from(userSubscriptions.get(userId) || []);
+export async function removeSubscription(redis, userId, instrument) {
+  return await redis.sRem(`user:${userId}:subscriptions`, instrument);
+}
+
+export async function getUserSubscriptions(redis, userId) {
+  const subs = await redis.sMembers(`user:${userId}:subscriptions`);
+  return subs || [];
+}
+
+export async function clearAllSubscriptions(redis) {
+  const keys = await redis.keys("user:*:subscriptions");
+  for (const key of keys) await redis.del(key);
+  console.log("🧹 Cleared all user subscriptions");
 }
 
 
-export function removeSubscription(userId, instrument) {
-  if (!userSubscriptions.has(userId)) {
-    return false;
-  }
-  const subs = userSubscriptions.get(userId);
-  const existed = subs.delete(instrument);
-  if (subs.size === 0) {
-    userSubscriptions.delete(userId); // clean up empty users
-  }
-  return existed;
-}

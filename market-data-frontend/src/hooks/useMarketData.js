@@ -1,40 +1,62 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 
 export function useMarketData() {
   const { token } = useAuth();
   const [data, setData] = useState({});
+  const [connected, setConnected] = useState(false);
   const wsRef = useRef(null);
 
   useEffect(() => {
     if (!token) return;
 
-    const wsUrl = `${import.meta.env.VITE_WS_URL}?token=${token}`;
-    const ws = new WebSocket(wsUrl);
+
+    const ws = new WebSocket(`${import.meta.env.VITE_WS_URL}?token=${token}`);
     wsRef.current = ws;
 
-    ws.onopen = () => console.log("✅ WebSocket connected");
-    ws.onclose = () => console.log("❌ WebSocket closed");
+    ws.onopen = () => {
+      console.log("✅ WebSocket connected");
+      setConnected(true);
+    };
 
+    ws.onclose = () => {
+      console.log("❌ WebSocket disconnected");
+      setConnected(false);
+    };
+
+    ws.onerror = (err) => {
+      console.error("⚠️ WebSocket error:", err);
+      setConnected(false);
+    };
+
+   
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        if (msg.type === "price_update" && Array.isArray(msg.data)) {
-          setData((prev) => {
-            const next = { ...prev };
-            msg.data.forEach((item) => {
-              next[item.instrumentName] = item;
-            });
-            return next;
-          });
+
+      
+        if (msg.type === "market_data" && msg.instrumentName) {
+          setData((prev) => ({
+            ...prev,
+            [msg.instrumentName]: msg,
+          }));
         }
-      } catch (err) {
-        console.error("WS message error:", err);
+
+        
+        if (msg.type === "connected") {
+          console.log("📡 Server says:", msg.message);
+        }
+      } catch (error) {
+        console.error("Invalid WS message:", event.data);
       }
     };
 
-    return () => ws.close();
+   
+    return () => {
+      ws.close();
+    };
   }, [token]);
 
-  return { data };
+ 
+  return { data, setData, connected };
 }

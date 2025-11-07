@@ -1,68 +1,80 @@
-// src/websocket/wsServer.js
-import { WebSocketServer } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 import jwt from "jsonwebtoken";
-import { userSubscriptions } from "../data/subscriptions.js";
-import { generateRandomPrice } from "../utils/random.js";
+import { getUserSubscriptions } from "../data/subscriptions.js";
 
-const clients = new Map();
+/**
+ * Initialize WebSocket server
+ * @param {import('http').Server} server
+ * @param {import('redis').RedisClientType} redis
+ */
+export function initWebSocket(server, redis) {
+  const wss = new WebSocketServer({ server });
+  console.log("✅ WebSocket server started");
 
-export function setupWebSocketServer(httpServer) {
-  // ✅ Use /stream as per assignment
-  const wss = new WebSocketServer({ noServer: true });
-
-  httpServer.on("upgrade", (req, socket, head) => {
-    const { url } = req;
-    if (!url.startsWith("/stream")) {
-      socket.destroy();
-      return;
-    }
-
-    wss.handleUpgrade(req, socket, head, (ws) => {
-      wss.emit("connection", ws, req);
-    });
-  });
-
-  console.log("✅ WebSocket Server initialized on /stream");
-
-  wss.on("connection", (ws, req) => {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const token = url.searchParams.get("token");
-
-    if (!token) {
-      ws.send(JSON.stringify({ error: "Missing token" }));
-      ws.close();
-      return;
-    }
-
+  
+  wss.on("connection", async (ws, req) => {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const userId = decoded.sub;
-      clients.set(userId, ws);
-      console.log(`🔗 User connected: ${decoded.username}`);
+    
+      const params = new URLSearchParams(req.url.split("?")[1]);
+      const token = params.get("token");
+      if (!token) {
+        ws.close(1008, "Missing token");
+        return;
+      }
 
-      ws.send(JSON.stringify({ message: "Connected to live market data" }));
+      
+      const payload = jwt.verify(token, process.env.JWT_SECRET);
+      const userId = payload.sub || payload.id;
 
-      ws.on("close", () => {
-        clients.delete(userId);
-        console.log(`❌ Disconnected: ${decoded.username}`);
-      });
-    } catch (err) {
-      ws.send(JSON.stringify({ error: "Invalid or expired token" }));
-      ws.close();
-    }
-  });
+      console.log(`🟢 User connected: ${userId}`);
 
-  // Broadcast simulated market data every 2 seconds
-  setInterval(() => {
-    for (const [userId, ws] of clients.entries()) {
-      const subs = Array.from(userSubscriptions.get(userId) || []);
-      if (subs.length === 0) continue;
+      
+      const subs = await getUserSubscriptions(redis, userId);
+      console.log(`📦 Restored ${subs.length} subscriptions for ${userId}`);
 
-      const updates = subs.map((instrumentName) =>
-        generateRandomPrice(instrumentName)
+      
+      ws.send(
+        JSON.stringify({
+          type: "connected",
+          message: `Welcome ${userId}`,
+          subscriptions: subs,
+        })
       );
 
-      ws.send(JSON.stringify({ type: "price_update", data: updates }));
+    
+      const sendMarketData = async () => {
+        const instruments = await getUserSubscriptions(redis, userId);
+        instruments.forEach((symbol) => {
+          const price = (Math.random() * 1000).toFixed(2);
+          const quantity = Math.floor(Math.random() * 100);
+          const msg = {
+            type: "market_data",
+            instrumentName: symbol,
+            lastTradedPrice: Number(price),
+            lastTradedQuantity: quantity,
+            lastTradedDateTime: new Date().toISOString(),
+            high: (Number(price) + Math.random() * 10).toFixed(2),
+            low: (Number(price) - Math.random() * 10).toFixed(2),
+          };
+          ws.send(JSON.stringify(msg));
+        });
+      };
+
+     
+      const interval = setInterval(sendMarketData, 2000);
+
+     
+      ws.on("close", () => {
+        clearInterval(interval);
+        console.log(`🔴 User disconnected: ${userId}`);
+      });
+
+      ws.on("error", (err) => {
+        console.error("⚠️ WebSocket error:", err.message);
+      });
+    } catch (err) {
+      console.error("❌ WebSocket connection error:", err.message);
+      ws.close(1008, "Unauthorized or invalid token");
     }
-  }, 2000);
+  });
 }

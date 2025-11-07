@@ -1,97 +1,3 @@
-// import React from "react";
-// import { useState } from "react";
-// import { loginRequest } from "../api/auth";
-// import { useAuth } from "../context/AuthContext";
-// import { useNavigate } from "react-router-dom";
-// import { setAuthToken } from "../api/client";
-
-// export default function LoginPage() {
-//   const [username, setUsername] = useState("demo");
-//   const [password, setPassword] = useState("password");
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState(null);
-//   const { login } = useAuth();
-//   const navigate = useNavigate();
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setError(null);
-//     setLoading(true);
-//     try {
-//       const { token } = await loginRequest({ username, password });
-//       login(token);
-//       setAuthToken(token);
-//       navigate("/");
-//     } catch (err) {
-//       setError(err.response?.data?.error || "Login failed");
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div style={styles.wrap}>
-//       <form onSubmit={handleSubmit} style={styles.card}>
-//         <h2>Market Data Login</h2>
-//         <label style={styles.label}>Username</label>
-//         <input
-//           style={styles.input}
-//           value={username}
-//           onChange={(e) => setUsername(e.target.value)}
-//         />
-//         <label style={styles.label}>Password</label>
-//         <input
-//           style={styles.input}
-//           type="password"
-//           value={password}
-//           onChange={(e) => setPassword(e.target.value)}
-//         />
-//         {error && <p style={styles.error}>{error}</p>}
-//         <button style={styles.button} disabled={loading}>
-//           {loading ? "Logging in..." : "Login"}
-//         </button>
-//       </form>
-//     </div>
-//   );
-// }
-
-// const styles = {
-//   wrap: {
-//     minHeight: "100vh",
-//     display: "grid",
-//     placeItems: "center",
-//     background: "#0b1220",
-//   },
-//   card: {
-//     background: "#fff",
-//     padding: "20px",
-//     borderRadius: "12px",
-//     width: "360px",
-//     boxShadow: "0 8px 24px rgba(0,0,0,.12)",
-//   },
-//   label: { display: "block", fontSize: "12px", marginTop: "8px" },
-//   input: {
-//     width: "100%",
-//     padding: "10px 12px",
-//     borderRadius: "8px",
-//     border: "1px solid #ccc",
-//     marginTop: "4px",
-//   },
-//   button: {
-//     marginTop: "14px",
-//     width: "100%",
-//     padding: "10px 12px",
-//     background: "#0f62fe",
-//     color: "#fff",
-//     border: "none",
-//     borderRadius: "8px",
-//     cursor: "pointer",
-//   },
-//   error: { color: "#b00020", fontSize: "13px", marginTop: "6px" },
-// };
-
-
-
 import React, { useState } from "react";
 import { loginRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
@@ -116,7 +22,7 @@ export default function LoginPage() {
       setAuthToken(token);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Login failed");
+      setError(err.response?.data?.error || alert("Incorrect username/password or U HAVEN'T STARTED RADIS YET"));
     } finally {
       setLoading(false);
     }

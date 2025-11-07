@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🔥 Custom global styling */
+
 body {
   @apply bg-[#0b1220] text-gray-100 min-h-screen font-sans;
 }

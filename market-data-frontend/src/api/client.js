@@ -1,16 +1,31 @@
+
+
+
 import axios from "axios";
 
-// Create a reusable axios instance for the whole app
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE,
-  headers: { "Content-Type": "application/json" },
+const client = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE || "http://localhost:4000",
+  withCredentials: true,
 });
 
-// Utility to attach or remove the JWT token from every request
+client.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const setAuthToken = (token) => {
   if (token) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    client.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    localStorage.setItem("token", token);
   } else {
-    delete api.defaults.headers.common["Authorization"];
+    delete client.defaults.headers.common["Authorization"];
+    localStorage.removeItem("token");
   }
 };
+
+export default client;
+
+
