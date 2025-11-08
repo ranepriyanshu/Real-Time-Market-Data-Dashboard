@@ -80,6 +80,7 @@ export default function LoginPage() {
         <p className="text-center text-gray-500 text-xs mt-6">
           Demo credentials: <span className="text-gray-300">demo / password</span>
         </p>
+        <p className="text-center text-gray-500 text-xs mt-6">Redis Command: <span className="text-white">docker start market-redis</span></p>
       </div>
     </div>
   );
